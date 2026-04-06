@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Game Angka 1-90</title>
+<style>
+:root{
+  --bg:#667eea;
+  --cell-off:rgba(255,255,255,0.2);
+  --cell-on:#ff4757;
+}
+
+body{
+  font-family:'Segoe UI',sans-serif;
+  text-align:center;
+  background:var(--bg);
+  color:white;
+  margin:0;
+  padding:15px; /* lebih kecil dari 20px */
+}
+h1{
+  margin:5px 0; /* rapatkan jarak ke angka */
+  font-size:20px;
+}
+.container{
+  background:rgba(255,255,255,0.1);
+  padding:15px; /* lebih compact */
+  border-radius:20px;
+  backdrop-filter:blur(10px);
+  max-width:800px; /* sedikit lebih lebar */
+  margin:auto;
+}
+
+.big-number{
+  font-size:90px;
+  color:#ffd93d;
+
+  height:auto; /* penting! buang jarak kosong dalam */
+  margin: 5px 0; /* jarak atas & bawah sama */
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(15,1fr);
+  gap:10px; /* tambah jarak biar tidak sesak */
+  margin-top:8px;
+}
+
+.cell{
+  aspect-ratio:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--cell-off);
+  border-radius:8px;
+  font-weight:bold;
+
+  font-size:26px; /* ±1.5x dari 18px */
+}
+
+.cell.active{
+  background:var(--cell-on);
+  transform:scale(1.15); /* sedikit lebih halus */
+}
+
+button{
+  margin:5px;
+  padding:8px 12px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+}
+
+.modal{
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-content{
+  background:#222;
+  padding:20px;
+  border-radius:15px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1 id="mainTitle">🎯 Game Angka 1-90</h1>
+<div class="big-number" id="bigNumber">-</div>
+
+<button onclick="startAuto()">Mulai</button>
+<button onclick="stopAuto()">Stop</button>
+<button onclick="resetGame()">Reset</button>
+<button onclick="openSettings()">⚙️</button>
+
+<div class="grid" id="grid"></div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3>Pengaturan</h3>
+
+    Judul/Header:<br>
+    <input type="text" id="titleInput" placeholder="Masukkan judul"><br><br>
+
+    Background <input type="color" id="bgPicker"><br>
+    Kotak Belum <input type="color" id="offPicker"><br>
+    Kotak Aktif <input type="color" id="onPicker"><br>
+
+    Timer <span id="speedLabel">1 detik</span>
+    <input type="range" min="1000" max="10000" step="1000" id="speedControl"><br>
+
+    Tema:
+    <button onclick="setTheme('default')">Default</button>
+    <button onclick="setTheme('dark')">Dark</button>
+    <button onclick="setTheme('neon')">Neon</button>
+
+    <br><br>
+    <button onclick="closeSettings()">Tutup</button>
+  </div>
+</div>
+
+<script>
+const grid=document.getElementById("grid");
+const bigNumber=document.getElementById("bigNumber");
+const modal=document.getElementById("modal");
+const speedControl=document.getElementById("speedControl");
+const speedLabel=document.getElementById("speedLabel");
+const mainTitle=document.getElementById("mainTitle");
+const titleInput=document.getElementById("titleInput");
+
+let interval=null;
+let usedNumbers=[];
+let speed=1000;
+
+for(let i=1;i<=90;i++){
+ let c=document.createElement("div");
+ c.className="cell";
+ c.textContent=i;
+ grid.appendChild(c);
+}
+
+function highlightRandom(){
+ let cells=document.querySelectorAll(".cell");
+ if(usedNumbers.length>=90){stopAuto();return;}
+ let r;
+ do{r=Math.floor(Math.random()*90);}while(usedNumbers.includes(r));
+ usedNumbers.push(r);
+ cells[r].classList.add("active");
+ bigNumber.textContent=cells[r].textContent;
+}
+
+function startAuto(){if(interval)return;interval=setInterval(highlightRandom,speed);}
+function stopAuto(){clearInterval(interval);interval=null;}
+
+function resetGame(){
+ stopAuto();
+ usedNumbers=[];
+ bigNumber.textContent="-";
+ document.querySelectorAll(".cell").forEach(c=>c.classList.remove("active"));
+}
+
+function openSettings(){
+ modal.style.display="flex";
+ titleInput.value=mainTitle.textContent.replace('🎯 ','');
+}
+
+function closeSettings(){
+ modal.style.display="none";
+ if(titleInput.value.trim()!==""){
+   mainTitle.textContent="🎯 "+titleInput.value;
+ }
+ saveSettings();
+}
+
+// SETTINGS
+const bgPicker=document.getElementById("bgPicker");
+const offPicker=document.getElementById("offPicker");
+const onPicker=document.getElementById("onPicker");
+
+bgPicker.oninput=e=>document.body.style.background=e.target.value;
+offPicker.oninput=e=>document.documentElement.style.setProperty('--cell-off',e.target.value);
+onPicker.oninput=e=>document.documentElement.style.setProperty('--cell-on',e.target.value);
+
+speedControl.oninput=()=>{
+ speed=parseInt(speedControl.value);
+ speedLabel.textContent=(speed/1000)+" detik";
+ if(interval){stopAuto();startAuto();}
+};
+
+function setTheme(t){
+ if(t==='dark'){
+  document.body.style.background="#111";
+  offPicker.value="#333";
+  onPicker.value="#e74c3c";
+ }
+ if(t==='neon'){
+  document.body.style.background="#000";
+  offPicker.value="#0ff";
+  onPicker.value="#f0f";
+ }
+ if(t==='default'){
+  document.body.style.background="#667eea";
+ }
+}
+
+// SAVE
+function saveSettings(){
+ localStorage.setItem("title",mainTitle.textContent);
+ localStorage.setItem("bg",document.body.style.background);
+ localStorage.setItem("off",getComputedStyle(document.documentElement).getPropertyValue('--cell-off'));
+ localStorage.setItem("on",getComputedStyle(document.documentElement).getPropertyValue('--cell-on'));
+ localStorage.setItem("speed",speed);
+}
+
+function loadSettings(){
+ let t=localStorage.getItem("title");
+ let bg=localStorage.getItem("bg");
+ let off=localStorage.getItem("off");
+ let on=localStorage.getItem("on");
+ let sp=localStorage.getItem("speed");
+
+ if(t)mainTitle.textContent=t;
+ if(bg)document.body.style.background=bg;
+ if(off)document.documentElement.style.setProperty('--cell-off',off);
+ if(on)document.documentElement.style.setProperty('--cell-on',on);
+ if(sp){
+   speed=parseInt(sp);
+   speedControl.value=sp;
+   speedLabel.textContent=(sp/1000)+" detik";
+ }
+}
+
+loadSettings();
+</script>
+
+</body>
+</html>
